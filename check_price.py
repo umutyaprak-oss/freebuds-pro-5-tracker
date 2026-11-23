@@ -11,6 +11,8 @@ import os
 import re
 import smtplib
 import sys
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from email.message import EmailMessage
@@ -366,11 +368,7 @@ def send_email_alert(
     gmail_to = os.environ.get("GMAIL_TO", "").strip() or gmail_user
 
     if not gmail_user or not gmail_app_password:
-        print(
-            "[UYARI] GMAIL_USER veya GMAIL_APP_PASSWORD ortam değişkeni tanımlı değil; "
-            "e-posta gönderilemedi."
-        )
-        return False
+        pass
 
     now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     prev_text = f"{prev_price:,.2f} TL" if prev_price is not None else "Yok (ilk kez eşik altı)"
@@ -401,18 +399,57 @@ def send_email_alert(
     lines.append("")
     lines.append(f"Kontrol Zamanı: {now_str}")
 
-    msg = EmailMessage()
-    msg["Subject"] = subject
-    msg["From"] = gmail_user
-    msg["To"] = gmail_to
-    msg.set_content("\n".join(lines))
+    body_text = "\n".join(lines)
+    sent_any = False
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as smtp:
-        smtp.login(gmail_user, gmail_app_password)
-        smtp.send_message(msg)
+    # 1) GitHub Issue bildirimi (Şifresiz / Secret gerektirmez — GitHub otomatik mail atar)
+    gh_token = os.environ.get("GITHUB_TOKEN", "").strip()
+    gh_repo = os.environ.get("GITHUB_REPOSITORY", "").strip()
+    gh_owner = os.environ.get("GITHUB_REPOSITORY_OWNER", "").strip()
 
-    print(f"[MAİL GÖNDERİLDİ] '{subject}' -> {gmail_to}")
-    return True
+    if gh_token and gh_repo:
+        issue_body = f"@{gh_owner} " + body_text if gh_owner else body_text
+        payload = json.dumps({"title": subject, "body": issue_body}).encode("utf-8")
+        req = urllib.request.Request(
+            f"https://api.github.com/repos/{gh_repo}/issues",
+            data=payload,
+            headers={
+                "Accept": "application/vnd.github+json",
+                "Authorization": f"Bearer {gh_token}",
+                "Content-Type": "application/json",
+                "User-Agent": "freebuds-pro-5-tracker",
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                issue_data = json.loads(resp.read().decode("utf-8"))
+                print(f"[GITHUB ISSUE AÇILDI] #{issue_data.get('number')} -> {issue_data.get('html_url')}")
+                sent_any = True
+        except urllib.error.URLError as exc:
+            print(f"[UYARI] GitHub Issue açılamadı: {exc}", file=sys.stderr)
+
+    # 2) Opsiyonel Gmail SMTP bildirimi (GMAIL_USER ve GMAIL_APP_PASSWORD tanımlıysa)
+    if gmail_user and gmail_app_password:
+        msg = EmailMessage()
+        msg["Subject"] = subject
+        msg["From"] = gmail_user
+        msg["To"] = gmail_to
+        msg.set_content(body_text)
+
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as smtp:
+            smtp.login(gmail_user, gmail_app_password)
+            smtp.send_message(msg)
+
+        print(f"[GMAIL GÖNDERİLDİ] '{subject}' -> {gmail_to}")
+        sent_any = True
+    elif not sent_any:
+        print(
+            "[UYARI] Ne GITHUB_TOKEN ne de GMAIL_USER/GMAIL_APP_PASSWORD tanımlı; "
+            "bildirim gönderilemedi."
+        )
+
+    return sent_any
 
 
 def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
