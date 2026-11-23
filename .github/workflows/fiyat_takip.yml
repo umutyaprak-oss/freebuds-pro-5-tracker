@@ -1,0 +1,63 @@
+name: FreeBuds Pro 5 Fiyat Takip
+
+on:
+  schedule:
+    # Her 15 dakikada bir çalışır (Public depolarda GitHub Actions ücretsizdir)
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      send_test_mail:
+        description: "Fiyat 7.500 TL üzerinde olsa bile test e-postası gönder (last_price.json değişmez)"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fiyat-takip-lock
+  cancel-in-progress: false
+
+jobs:
+  check-price:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Depoyu indir
+        uses: actions/checkout@v4
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Bağımlılıkları yükle
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Playwright Chromium tarayıcısını kur (fallback için)
+        run: |
+          python -m playwright install --with-deps chromium
+
+      - name: Fiyat kontrolünü çalıştır
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_TO: ${{ secrets.GMAIL_TO }}
+          SEND_TEST_MAIL: ${{ inputs.send_test_mail || 'false' }}
+        run: python check_price.py
+
+      - name: last_price.json güncellendiyse commit ve push yap
+        run: |
+          if [ -n "$(git status --porcelain last_price.json)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add last_price.json
+            git commit -m "chore: update last_price.json"
+            git push
+          else
+            echo "last_price.json değişmedi, commit atılmayacak."
+          fi
