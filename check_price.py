@@ -12,6 +12,7 @@ import re
 import smtplib
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -30,14 +31,14 @@ except ImportError:
     pass
 
 # --- Ayarlar ---
-AKAKCE_URL = (
-    "https://www.akakce.com/bluetooth-kulaklik/"
-    "en-ucuz-huawei-freebuds-pro-5-anc-tws-beyaz-kulak-ici-fiyati,1430910638.html"
-)
-VATAN_URL = (
-    "https://www.vatanbilgisayar.com/"
-    "huawei-freebuds-pro-5-bluetooth-kablosuz-kulak-ici-kulaklik-gri.html"
-)
+AKAKCE_SEARCH_URL = "https://www.akakce.com/arama/?q=huawei+freebuds+pro+5"
+AKAKCE_FALLBACK_URLS = [
+    "https://www.akakce.com/bluetooth-kulaklik/en-ucuz-huawei-freebuds-pro-5-anc-tws-beyaz-kulak-ici-fiyati,1430910638.html",
+]
+VATAN_SEARCH_URL = "https://www.vatanbilgisayar.com/arama/huawei%20freebuds%20pro%205/"
+VATAN_FALLBACK_URLS = [
+    "https://www.vatanbilgisayar.com/huawei-freebuds-pro-5-bluetooth-kablosuz-kulak-ici-kulaklik-gri.html",
+]
 
 GOOD_DEAL_THRESHOLD = 7500.0
 URGENT_THRESHOLD = 7000.0
@@ -183,6 +184,66 @@ def fetch_html(url: str) -> str:
         return pw_html
 
     raise RuntimeError(f"Sayfa çekilemedi ({url}): {last_error}")
+
+
+def _is_freebuds_pro_5_product(text: str, href: str) -> bool:
+    """Metin veya URL'nin FreeBuds Pro 5 kulaklığa ait olup olmadığını kontrol eder."""
+    combined = normalize_turkish(f"{text} {href.replace('-', ' ')}")
+    if "freebuds pro 5" not in combined:
+        return False
+    return is_excluded(combined) is None
+
+
+def discover_akakce_product_urls(search_html: str, max_urls: int = 8) -> list[str]:
+    """
+    Akakçe arama sayfasından tüm renk/varyant ürün sayfalarını bulur.
+    """
+    soup = BeautifulSoup(search_html, "html.parser")
+    seen: set[str] = set()
+    urls: list[str] = []
+
+    for a in soup.select("a[href]"):
+        href = (a.get("href") or "").strip()
+        if not href or "freebuds-pro-5" not in href.lower():
+            continue
+        if not re.search(r",\d+\.html$", href):
+            continue
+        text = a.get_text(" ", strip=True) or a.get("title", "")
+        if not _is_freebuds_pro_5_product(text, href):
+            continue
+        full_url = urllib.parse.urljoin("https://www.akakce.com", href.split("#")[0])
+        if full_url not in seen:
+            seen.add(full_url)
+            urls.append(full_url)
+            if len(urls) >= max_urls:
+                break
+
+    return urls
+
+
+def discover_vatan_product_urls(search_html: str, max_urls: int = 8) -> list[str]:
+    """
+    Vatan Bilgisayar arama sayfasından tüm renk/varyant ürün sayfalarını bulur.
+    """
+    soup = BeautifulSoup(search_html, "html.parser")
+    seen: set[str] = set()
+    urls: list[str] = []
+
+    for a in soup.select("a[href]"):
+        href = (a.get("href") or "").strip()
+        if not href or "freebuds-pro-5" not in href.lower() or not href.lower().endswith(".html"):
+            continue
+        text = a.get_text(" ", strip=True) or a.get("title", "")
+        if not _is_freebuds_pro_5_product(text, href):
+            continue
+        full_url = urllib.parse.urljoin("https://www.vatanbilgisayar.com", href.split("#")[0])
+        if full_url not in seen:
+            seen.add(full_url)
+            urls.append(full_url)
+            if len(urls) >= max_urls:
+                break
+
+    return urls
 
 
 def parse_akakce(page_html: str, url: str) -> tuple[Optional[Offer], int, int]:
@@ -486,36 +547,62 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     offers: list[Offer] = []
 
-    # 1. Akakçe
+    # 1. Akakçe (Tüm renkler ve tüm siteler)
+    akakce_urls: list[str] = []
     try:
-        akakce_html = fetch_html(AKAKCE_URL)
-        akakce_offer, valid_cnt, filtered_cnt = parse_akakce(akakce_html, AKAKCE_URL)
-        if akakce_offer:
-            offers.append(akakce_offer)
-            print(
-                f"[Akakçe] En ucuz geçerli fiyat: {akakce_offer.price:,.2f} TL "
-                f"| Satıcı: {akakce_offer.seller} | Kargo: {akakce_offer.shipping} "
-                f"(Geçerli: {valid_cnt}, Elenen: {filtered_cnt})"
-            )
-        else:
-            print(f"[Akakçe] Geçerli ilan bulunamadı (Elenen: {filtered_cnt}).")
+        search_html = fetch_html(AKAKCE_SEARCH_URL)
+        akakce_urls = discover_akakce_product_urls(search_html)
+        print(f"[Akakçe Arama] {len(akakce_urls)} ürün/renk sayfası bulundu.")
     except Exception as exc:
-        print(f"[HATA - Akakçe] {exc}", file=sys.stderr)
+        print(f"[UYARI - Akakçe Arama] {exc}", file=sys.stderr)
 
-    # 2. Vatan Bilgisayar
+    for fallback_url in AKAKCE_FALLBACK_URLS:
+        if fallback_url not in akakce_urls:
+            akakce_urls.append(fallback_url)
+
+    for url in akakce_urls:
+        try:
+            akakce_html = fetch_html(url)
+            akakce_offer, valid_cnt, filtered_cnt = parse_akakce(akakce_html, url)
+            if akakce_offer:
+                offers.append(akakce_offer)
+                print(
+                    f"[Akakçe] {akakce_offer.title}: {akakce_offer.price:,.2f} TL "
+                    f"| Satıcı: {akakce_offer.seller} | Kargo: {akakce_offer.shipping} "
+                    f"(Geçerli: {valid_cnt}, Elenen: {filtered_cnt})"
+                )
+            else:
+                print(f"[Akakçe] Geçerli ilan bulunamadı ({url}, Elenen: {filtered_cnt}).")
+        except Exception as exc:
+            print(f"[HATA - Akakçe] ({url}) {exc}", file=sys.stderr)
+
+    # 2. Vatan Bilgisayar (Tüm renkler)
+    vatan_urls: list[str] = []
     try:
-        vatan_html = fetch_html(VATAN_URL)
-        vatan_offer = parse_vatan(vatan_html, VATAN_URL)
-        if vatan_offer:
-            offers.append(vatan_offer)
-            print(
-                f"[Vatan]  Güncel fiyat: {vatan_offer.price:,.2f} TL "
-                f"| Ürün: {vatan_offer.title}"
-            )
-        else:
-            print("[Vatan]  Geçerli veya stokta ürün bulunamadı.")
+        vatan_search_html = fetch_html(VATAN_SEARCH_URL)
+        vatan_urls = discover_vatan_product_urls(vatan_search_html)
+        print(f"[Vatan Arama] {len(vatan_urls)} ürün/renk sayfası bulundu.")
     except Exception as exc:
-        print(f"[HATA - Vatan] {exc}", file=sys.stderr)
+        print(f"[UYARI - Vatan Arama] {exc}", file=sys.stderr)
+
+    for fallback_url in VATAN_FALLBACK_URLS:
+        if fallback_url not in vatan_urls:
+            vatan_urls.append(fallback_url)
+
+    for url in vatan_urls:
+        try:
+            vatan_html = fetch_html(url)
+            vatan_offer = parse_vatan(vatan_html, url)
+            if vatan_offer:
+                offers.append(vatan_offer)
+                print(
+                    f"[Vatan]  Güncel fiyat: {vatan_offer.price:,.2f} TL "
+                    f"| Ürün: {vatan_offer.title}"
+                )
+            else:
+                print(f"[Vatan]  Geçerli veya stokta ürün bulunamadı ({url}).")
+        except Exception as exc:
+            print(f"[HATA - Vatan] ({url}) {exc}", file=sys.stderr)
 
     if not offers:
         print("[HATA] Hiçbir kaynaktan geçerli fiyat çekilemedi.", file=sys.stderr)
@@ -575,7 +662,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             "last_notified_tier": tier,
             "last_notified_at": datetime.now(timezone.utc).isoformat(),
             "latest_prices": {
-                o.source: {
+                f"{o.source} | {o.title}": {
                     "price": o.price,
                     "seller": o.seller,
                     "title": o.title,
