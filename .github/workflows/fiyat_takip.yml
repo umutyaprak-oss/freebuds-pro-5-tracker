@@ -2,8 +2,8 @@ name: FreeBuds Pro 5 Fiyat Takip
 
 on:
   schedule:
-    # Her 15 dakikada bir çalışır (Public depolarda GitHub Actions ücretsizdir)
-    - cron: "*/15 * * * *"
+    # Her 15 dakikada bir, GitHub'ın yoğun :00/:15/:30/:45 dakikalarından kaçınarak çalışır
+    - cron: "7,22,37,52 * * * *"
   workflow_dispatch:
     inputs:
       send_test_mail:
