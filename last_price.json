@@ -1,34 +1,55 @@
 {
-  "last_notified_price": 6399.0,
-  "last_notified_source": "Akakçe",
-  "last_notified_seller": "MediaMarkt 8,6 699 Yorum",
-  "last_notified_url": "https://www.akakce.com/bluetooth-kulaklik/en-ucuz-huawei-freebuds-pro-5-anc-tws-beyaz-kulak-ici-fiyati,1430910638.html",
-  "last_notified_tier": "urgent_7000",
-  "last_notified_at": "2026-11-24T18:16:28.037659+00:00",
-  "latest_prices": {
-    "Akakçe | Huawei Freebus Pro 5 Bluetooth Kulak İçi Kulaklık Beyaz": {
-      "price": 6399.0,
-      "seller": "MediaMarkt 8,6 699 Yorum",
-      "title": "Huawei Freebus Pro 5 Bluetooth Kulak İçi Kulaklık Beyaz",
-      "url": "https://www.akakce.com/bluetooth-kulaklik/en-ucuz-huawei-freebuds-pro-5-anc-tws-kulak-ici-fiyati,1288939728.html"
+  "products": {
+    "freebuds_pro_5": {
+      "last_notified_price": 6399.0,
+      "last_notified_source": "Akakçe",
+      "last_notified_seller": "MediaMarkt 8,6 699 Yorum",
+      "last_notified_url": "https://www.akakce.com/bluetooth-kulaklik/en-ucuz-huawei-freebuds-pro-5-anc-tws-beyaz-kulak-ici-fiyati,1430910638.html",
+      "last_notified_tier": "urgent_7000",
+      "last_notified_at": "2026-11-24T18:16:28.037659+00:00",
+      "latest_prices": {
+        "Akakçe | Huawei Freebus Pro 5 Bluetooth Kulak İçi Kulaklık Beyaz": {
+          "price": 6399.0,
+          "seller": "MediaMarkt 8,6 699 Yorum",
+          "title": "Huawei Freebus Pro 5 Bluetooth Kulak İçi Kulaklık Beyaz",
+          "url": "https://www.akakce.com/bluetooth-kulaklik/en-ucuz-huawei-freebuds-pro-5-anc-tws-kulak-ici-fiyati,1288939728.html"
+        },
+        "Akakçe | Huawei Freebuds Pro 5 Bluetooth Kulak İçi Kulaklık Mavi": {
+          "price": 8449.0,
+          "seller": "MediaMarkt 8,6 699 Yorum",
+          "title": "Huawei Freebuds Pro 5 Bluetooth Kulak İçi Kulaklık Mavi",
+          "url": "https://www.akakce.com/bluetooth-kulaklik/en-ucuz-huawei-freebuds-pro-5-anc-tws-mavi-kulak-ici-fiyati,1437075960.html"
+        },
+        "Akakçe | Huawei Freebus Pro 5 Bluetooth Kulak İçi Kulaklık Gri": {
+          "price": 8449.0,
+          "seller": "MediaMarkt 8,6 699 Yorum",
+          "title": "Huawei Freebus Pro 5 Bluetooth Kulak İçi Kulaklık Gri",
+          "url": "https://www.akakce.com/bluetooth-kulaklik/en-ucuz-huawei-freebuds-pro-5-anc-tws-gri-kulak-ici-fiyati,1430910639.html"
+        },
+        "Akakçe | Huawei Freebus Pro 5 Bluetooth Kulak İçi Kulaklık Kum Beji": {
+          "price": 8449.0,
+          "seller": "MediaMarkt 8,6 699 Yorum",
+          "title": "Huawei Freebus Pro 5 Bluetooth Kulak İçi Kulaklık Kum Beji",
+          "url": "https://www.akakce.com/bluetooth-kulaklik/en-ucuz-huawei-freebuds-pro-5-anc-tws-bej-kulak-ici-fiyati,1430910640.html"
+        }
+      }
     },
-    "Akakçe | Huawei Freebuds Pro 5 Bluetooth Kulak İçi Kulaklık Mavi": {
-      "price": 8449.0,
-      "seller": "MediaMarkt 8,6 699 Yorum",
-      "title": "Huawei Freebuds Pro 5 Bluetooth Kulak İçi Kulaklık Mavi",
-      "url": "https://www.akakce.com/bluetooth-kulaklik/en-ucuz-huawei-freebuds-pro-5-anc-tws-mavi-kulak-ici-fiyati,1437075960.html"
-    },
-    "Akakçe | Huawei Freebus Pro 5 Bluetooth Kulak İçi Kulaklık Gri": {
-      "price": 8449.0,
-      "seller": "MediaMarkt 8,6 699 Yorum",
-      "title": "Huawei Freebus Pro 5 Bluetooth Kulak İçi Kulaklık Gri",
-      "url": "https://www.akakce.com/bluetooth-kulaklik/en-ucuz-huawei-freebuds-pro-5-anc-tws-gri-kulak-ici-fiyati,1430910639.html"
-    },
-    "Akakçe | Huawei Freebus Pro 5 Bluetooth Kulak İçi Kulaklık Kum Beji": {
-      "price": 8449.0,
-      "seller": "MediaMarkt 8,6 699 Yorum",
-      "title": "Huawei Freebus Pro 5 Bluetooth Kulak İçi Kulaklık Kum Beji",
-      "url": "https://www.akakce.com/bluetooth-kulaklik/en-ucuz-huawei-freebuds-pro-5-anc-tws-bej-kulak-ici-fiyati,1430910640.html"
+    "airpods_pro_3": {
+      "name": "Apple AirPods Pro 3",
+      "last_notified_price": 11494.05,
+      "last_notified_source": "Akakçe",
+      "last_notified_seller": "Trendyol /MediaMarkt",
+      "last_notified_url": "https://www.akakce.com/bluetooth-kulaklik/en-ucuz-airpods-pro-3-nesil-fiyati,886427596.html",
+      "last_notified_tier": "good_11500",
+      "last_notified_at": "2026-11-25T13:31:36.495672+00:00",
+      "latest_prices": {
+        "Akakçe | Apple AirPods Pro 3": {
+          "price": 11494.05,
+          "seller": "Trendyol /MediaMarkt",
+          "title": "Apple AirPods Pro 3",
+          "url": "https://www.akakce.com/bluetooth-kulaklik/en-ucuz-airpods-pro-3-nesil-fiyati,886427596.html"
+        }
+      }
     }
   }
 }
